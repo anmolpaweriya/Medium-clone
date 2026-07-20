@@ -12,13 +12,17 @@ const {
     getFollowingFeed,
     getTopicsFeed,
     getMyArticles,
-  deleteArticle,
-    getHome
+    deleteArticle,
+    getHome,
+    toggleLike,
+    getTrendingFeed,
 } = require("../controllers/article.controller");
 
 
 router.get("/home", getHome);
+router.get("/trending", getTrendingFeed);
 router.post("/", auth, createArticle);
+router.post("/:id/like", auth, toggleLike);
 router.patch("/:id", auth, updateArticle);
 router.get("/me", auth, getMyArticles);
 router.get("/following", auth, getFollowingFeed);

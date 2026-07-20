@@ -69,6 +69,8 @@ exports.createArticle = async (req, res) => {
 
 
 
+const Notification = require("../models/Notification");
+
 async function populateArticles(filter = {}) {
 
     return await Article.aggregate([
@@ -98,6 +100,15 @@ async function populateArticles(filter = {}) {
         },
 
         {
+            $lookup: {
+                from: "comments",
+                localField: "id",
+                foreignField: "articleId",
+                as: "commentsList",
+            }
+        },
+
+        {
           $project: {
               _id: 0,
 
@@ -105,15 +116,16 @@ async function populateArticles(filter = {}) {
               slug: 1,
               title: 1,
               excerpt: 1,
-              content: 1,        // <-- add this
+              content: 1,
               coverImage: 1,
               tags: 1,
               readTime: 1,
               status: 1,
               publishedAt: 1,
               createdAt: 1,
-              likes: 1,
-              comments: 1,
+              likesList: { $ifNull: ["$likes", []] },
+              likes: { $size: { $ifNull: ["$likes", []] } },
+              comments: { $size: "$commentsList" },
               views: 1,
 
               author: {
@@ -130,16 +142,77 @@ async function populateArticles(filter = {}) {
 
 }
 
-
-
-exports.getFeed = async (req, res) => {
-
+exports.toggleLike = async (req, res) => {
     try {
+        const article = await Article.findOne({ id: req.params.id });
 
-        const articles = await populateArticles({
-            status: "published",
+        if (!article) {
+            return res.status(404).json({ message: "Article not found" });
+        }
+
+        if (!article.likes) {
+            article.likes = [];
+        }
+
+        const index = article.likes.indexOf(req.userId);
+        let liked = false;
+
+        if (index > -1) {
+            article.likes.splice(index, 1);
+        } else {
+            article.likes.push(req.userId);
+            liked = true;
+
+            if (article.author && article.author !== req.userId) {
+                await Notification.create({
+                    recipient: article.author,
+                    actor: req.userId,
+                    kind: "clap",
+                    articleId: article.id,
+                });
+            }
+        }
+
+        await article.save();
+
+        res.json({
+            liked,
+            likes: article.likes.length,
         });
 
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+
+
+exports.getTrendingFeed = async (req, res) => {
+    try {
+        const articles = await populateArticles({ status: "published" });
+
+        articles.sort((a, b) => (b.likes + (b.views || 0)) - (a.likes + (a.views || 0)));
+
+        res.json(articles);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+exports.getFeed = async (req, res) => {
+    try {
+        const filter = { status: "published" };
+
+        if (req.query.tags) {
+            const tagsList = req.query.tags.split(",");
+            filter.tags = { $in: tagsList };
+        }
+
+        if (req.query.exclude) {
+            filter.slug = { $ne: req.query.exclude };
+        }
+
+        const articles = await populateArticles(filter);
         res.json(articles);
 
     } catch (err) {
@@ -216,31 +289,27 @@ exports.getMyArticles = async (req, res) => {
 };
 
 exports.getArticle = async (req, res) => {
-
     try {
-
         const article = await populateArticles({
-            slug: req.params.slug,
+            $or: [{ slug: req.params.slug }, { id: req.params.slug }],
         });
 
         if (!article.length) {
-
             return res.status(404).json({
                 message: "Article not found",
             });
-
         }
 
-        await Article.updateOne(
-            {
-                slug: req.params.slug,
-            },
-            {
-                $inc: {
-                    views: 1,
+        if (article[0].status === "published") {
+            await Article.updateOne(
+                { id: article[0].id },
+                {
+                    $inc: {
+                        views: 1,
+                    }
                 }
-            }
-        );
+            );
+        }
 
         res.json(article[0]);
 
@@ -257,11 +326,20 @@ exports.getArticle = async (req, res) => {
 exports.updateArticle = async (req, res) => {
 
     try {
+        const user = await User.findOne({ id: req.userId });
+        if (!user) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
 
-        const article = await Article.findOne({
-            id: req.params.id,
-            author: req.userId,
-        });
+        const filter = {
+            $or: [{ id: req.params.id }, { slug: req.params.id }],
+        };
+
+        if (user.role !== "admin") {
+            filter.author = req.userId;
+        }
+
+        const article = await Article.findOne(filter);
 
         if (!article) {
 
@@ -373,39 +451,28 @@ exports.getHome = async (req, res) => {
         });
 
         const hero = articles[0] || null;
-
         const featured = articles.slice(1, 4);
-
-        const latest = articles.slice(4);
+        const latest = articles.length > 4 ? articles.slice(4) : articles;
 
         const writersMap = new Map();
-
         const tagsMap = new Map();
 
         for (const article of articles) {
-
-            if (!writersMap.has(article.author.id)) {
+            if (article.author && article.author.id && !writersMap.has(article.author.id)) {
                 writersMap.set(article.author.id, article.author);
             }
 
             for (const tag of article.tags || []) {
                 tagsMap.set(tag, true);
             }
-
         }
 
         res.json({
-
             hero,
-
             featured,
-
             latest,
-
             writers: [...writersMap.values()].slice(0, 6),
-
             trendingTags: [...tagsMap.keys()].slice(0, 10),
-
         });
 
     } catch (err) {

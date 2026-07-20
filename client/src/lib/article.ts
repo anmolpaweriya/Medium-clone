@@ -37,9 +37,21 @@ export const getFollowingFeed = () =>
 export const getTopicsFeed = () =>
   api.get("/articles/topics");
 
+export const getTrendingFeed = () =>
+  api.get("/articles/trending");
 
-export const getArticleDetails = (slug) =>
+
+export const getArticleDetails = (slug: string) =>
   api.get(`/articles/${slug}`);
 
-export const getArticleComments = (articleId) =>
+export const getArticleComments = (articleId: string) =>
   api.get(`/comments/article/${articleId}`);
+
+export const likeArticle = (id: string) =>
+  api.post(`/articles/${id}/like`);
+
+export const postComment = (data: { articleId: string; content: string }) =>
+  api.post("/comments", data);
+
+export const deleteComment = (id: string) =>
+  api.delete(`/comments/${id}`);

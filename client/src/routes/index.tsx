@@ -6,6 +6,7 @@ import { PageShell } from "@/components/site-header";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useAuth, useToggleFollow } from "@/hooks/use-auth";
 import { useHome } from "@/hooks/use-home";
 
 export const Route = createFileRoute("/")({
@@ -13,16 +14,18 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
+  const { data: user } = useAuth();
+  const { mutate: toggleFollow, isPending: isFollowing } = useToggleFollow();
   const { data, isLoading } = useHome();
 
   if (isLoading) {
-      return (
-          <PageShell>
-            <div className="container-wide py-24 flex justify-center">
-                Loading articles...
-            </div>
-          </PageShell>
-      );
+    return (
+      <PageShell>
+        <div className="container-wide py-24 flex justify-center">
+          Loading articles...
+        </div>
+      </PageShell>
+    );
   }
   if (!data?.hero) {
     return (
@@ -47,11 +50,11 @@ function Home() {
   }
 
   const {
-      hero,
-      featured,
-      latest,
-      writers,
-      trendingTags,
+    hero,
+    featured,
+    latest,
+    writers,
+    trendingTags,
   } = data;
 
   return (
@@ -121,7 +124,7 @@ function Home() {
                   </div>
                   <h3 className="mt-2 font-serif text-lg font-semibold leading-snug group-hover:opacity-90">{a.title}</h3>
                   <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
-                      {a.excerpt}
+                    {a.excerpt}
                   </p>
                 </Link>
               );
@@ -161,18 +164,31 @@ function Home() {
           <div>
             <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Who to follow</h3>
             <div className="space-y-4">
-              {writers.map((u) => (
-                <div key={u.id} className="flex items-center gap-3">
-                  <Avatar className="h-10 w-10"><AvatarImage src={u.avatar} /><AvatarFallback>{u.name[0]}</AvatarFallback></Avatar>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate font-medium">{u.name}</div>
-                    <div className="line-clamp-1 text-xs text-muted-foreground">
+              {writers.map((u: any) => {
+                const isFollowingWriter = user?.following?.includes(u.id);
+                return (
+                  <div key={u.id} className="flex items-center gap-3">
+                    <Avatar className="h-10 w-10"><AvatarImage src={u.avatar} /><AvatarFallback>{u.name?.[0] || "U"}</AvatarFallback></Avatar>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate font-medium">{u.name}</div>
+                      <div className="line-clamp-1 text-xs text-muted-foreground">
                         @{u.username}
+                      </div>
                     </div>
+                    {user?.id !== u.id && (
+                      <Button
+                        size="sm"
+                        variant={isFollowingWriter ? "outline" : "default"}
+                        className="rounded-full"
+                        onClick={() => toggleFollow(u.id)}
+                        disabled={isFollowing}
+                      >
+                        {isFollowingWriter ? "Following" : "Follow"}
+                      </Button>
+                    )}
                   </div>
-                  <Button size="sm" variant="outline" className="rounded-full">Follow</Button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 

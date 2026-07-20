@@ -1,10 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
-
+import { createFileRoute } from '@tanstack/react-router';
 import { PageShell } from "@/components/site-header";
 import { WriterNav } from "@/components/writer-nav";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { articlesByAuthor, currentUser, viewsSeries } from "@/lib/mock-data";
+import { useMyArticles } from "@/hooks/use-article";
+import { viewsSeries } from "@/lib/mock-data";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 export const Route = createFileRoute("/writer/analytics")({
@@ -13,10 +13,22 @@ export const Route = createFileRoute("/writer/analytics")({
 });
 
 function Analytics() {
-  const arts = articlesByAuthor(currentUser.id);
-  const totalViews = arts.reduce((s, a) => s + a.views, 0);
+  const { data: allArticles = [], isLoading } = useMyArticles();
+
+  const arts = allArticles.filter((a: any) => a.status === "published");
+  const totalViews = arts.reduce((s, a: any) => s + (a.views || 0), 0);
   const totalReads = Math.round(totalViews * 0.62);
-  const readRatio = ((totalReads / totalViews) * 100).toFixed(1);
+  const readRatio = totalViews > 0 ? ((totalReads / totalViews) * 100).toFixed(1) : "0.0";
+
+  if (isLoading) {
+    return (
+      <PageShell>
+        <div className="container-wide py-10">
+          Loading analytics...
+        </div>
+      </PageShell>
+    );
+  }
 
   return (
     <PageShell>
@@ -49,12 +61,13 @@ function Analytics() {
         <Card className="mt-6">
           <CardHeader><CardTitle>Top performing stories</CardTitle></CardHeader>
           <CardContent className="space-y-3">
-            {[...arts].sort((a, b) => b.views - a.views).slice(0, 5).map((a) => (
+            {[...arts].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 5).map((a: any) => (
               <div key={a.id} className="flex items-center justify-between border-b border-border/40 pb-3 last:border-0 last:pb-0">
-                <div className="min-w-0 flex-1"><div className="line-clamp-1 font-medium">{a.title}</div><div className="text-xs text-muted-foreground">{a.readMinutes} min read · {new Date(a.publishedAt).toLocaleDateString()}</div></div>
-                <div className="ml-4 text-right"><div className="font-semibold tabular-nums">{a.views.toLocaleString()}</div><div className="text-xs text-muted-foreground">views</div></div>
+                <div className="min-w-0 flex-1"><div className="line-clamp-1 font-medium">{a.title}</div><div className="text-xs text-muted-foreground">{a.readTime || 1} min read · {a.publishedAt ? new Date(a.publishedAt).toLocaleDateString() : "Draft"}</div></div>
+                <div className="ml-4 text-right"><div className="font-semibold tabular-nums">{(a.views || 0).toLocaleString()}</div><div className="text-xs text-muted-foreground">views</div></div>
               </div>
             ))}
+            {arts.length === 0 && <p className="text-sm text-muted-foreground">No published stories yet.</p>}
           </CardContent>
         </Card>
       </div>

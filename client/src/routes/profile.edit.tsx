@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { ArrowLeft, Camera } from "lucide-react";
 
@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { currentUser } from "@/lib/mock-data";
+import { useAuth, useUpdateProfile } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/profile/edit")({
   head: () => ({ meta: [{ title: "Edit profile — Prosely" }] }),
@@ -18,19 +18,49 @@ export const Route = createFileRoute("/profile/edit")({
 
 function EditProfile() {
   const navigate = useNavigate();
-  const [name, setName] = useState(currentUser.name);
-  const [handle, setHandle] = useState(currentUser.handle);
-  const [bio, setBio] = useState(currentUser.bio);
-  const [avatar, setAvatar] = useState(currentUser.avatar);
-  const [email, setEmail] = useState(`${currentUser.handle}@prosely.dev`);
+  const { data: user, isLoading } = useAuth();
+  const { mutate: updateProfile, isPending } = useUpdateProfile();
+
+  const [name, setName] = useState("");
+  const [handle, setHandle] = useState("");
+  const [bio, setBio] = useState("");
+  const [avatar, setAvatar] = useState("");
+  const [email, setEmail] = useState("");
+
+  useEffect(() => {
+    if (user) {
+      setName(user.name || "");
+      setHandle(user.username || "");
+      setBio(user.bio || "");
+      setAvatar(user.avatar || "");
+      setEmail(user.email || "");
+    }
+  }, [user]);
   const [website, setWebsite] = useState("");
   const [location, setLocation] = useState("");
   const [twitter, setTwitter] = useState("");
 
   function save(e: React.FormEvent) {
     e.preventDefault();
-    toast.success("Profile updated");
-    navigate({ to: "/profile" });
+    updateProfile({
+      name,
+      username: handle,
+      bio,
+      avatar,
+      email,
+    }, {
+      onSuccess: () => navigate({ to: "/profile" }),
+    });
+  }
+
+  if (isLoading) {
+    return (
+      <PageShell>
+        <div className="container-prose py-20 text-center">
+          Loading...
+        </div>
+      </PageShell>
+    );
   }
 
   return (
@@ -52,7 +82,7 @@ function EditProfile() {
             <div className="relative">
               <Avatar className="h-20 w-20">
                 <AvatarImage src={avatar} alt={name} />
-                <AvatarFallback>{name[0]}</AvatarFallback>
+                <AvatarFallback>{name[0] || "U"}</AvatarFallback>
               </Avatar>
               <button
                 type="button"

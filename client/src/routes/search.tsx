@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Search as SearchIcon } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import { ArticleCard } from "@/components/article-card";
 import { PageShell } from "@/components/site-header";
@@ -8,17 +8,39 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { publications, publishedArticles, tags, users } from "@/lib/mock-data";
+import { useFeed } from "@/hooks/use-article";
+import { publications, tags, users } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/search")({
+  validateSearch: (search: Record<string, unknown>) => {
+    return {
+      q: (search.q as string) || "",
+    };
+  },
   head: () => ({ meta: [{ title: "Search — Prosely" }] }),
   component: SearchPage,
 });
 
 function SearchPage() {
-  const [q, setQ] = useState("");
+  const { q: initialQ } = Route.useSearch();
+  const [q, setQ] = useState(initialQ || "");
+  const { data: allArticles = [] } = useFeed();
+
+  useEffect(() => {
+    if (initialQ !== undefined) {
+      setQ(initialQ);
+    }
+  }, [initialQ]);
+
   const query = q.trim().toLowerCase();
-  const filterArt = publishedArticles().filter((a) => !query || a.title.toLowerCase().includes(query) || a.tags.join(" ").toLowerCase().includes(query));
+  const filterArt = allArticles.filter(
+    (a: any) =>
+      !query ||
+      a.title?.toLowerCase().includes(query) ||
+      a.excerpt?.toLowerCase().includes(query) ||
+      (a.tags || []).join(" ").toLowerCase().includes(query) ||
+      a.author?.name?.toLowerCase().includes(query)
+  );
   const filterUsers = users.filter((u) => u.role !== "admin" && (!query || u.name.toLowerCase().includes(query) || u.handle.includes(query)));
   const filterPubs = publications.filter((p) => !query || p.name.toLowerCase().includes(query));
 

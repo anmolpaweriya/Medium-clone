@@ -68,6 +68,13 @@ const articleSchema = new mongoose.Schema(
             type: Number,
             default: 0,
         },
+
+        likes: [
+            {
+                type: String,
+                ref: "User",
+            },
+        ],
     },
     {
         timestamps: true,

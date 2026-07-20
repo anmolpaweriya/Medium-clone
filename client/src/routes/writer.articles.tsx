@@ -1,12 +1,12 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { Eye, MessageCircle, MoreHorizontal, ThumbsUp } from "lucide-react";
+import { Eye, MessageCircle, Pencil, ThumbsUp, Trash2 } from "lucide-react";
 
 import { PageShell } from "@/components/site-header";
 import { WriterNav } from "@/components/writer-nav";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { articlesByAuthor, currentUser } from "@/lib/mock-data";
+import { useMyArticles, useDeleteArticle } from "@/hooks/use-article";
 
 export const Route = createFileRoute("/writer/articles")({
   head: () => ({ meta: [{ title: "My articles — Prosely" }] }),
@@ -14,7 +14,20 @@ export const Route = createFileRoute("/writer/articles")({
 });
 
 function MyArticles() {
-  const arts = articlesByAuthor(currentUser.id);
+  const { data: allArticles = [], isLoading } = useMyArticles();
+  const { mutate: deleteArticle, isPending: isDeleting } = useDeleteArticle();
+  const arts = allArticles.filter((a: any) => a.status === "published");
+
+  if (isLoading) {
+    return (
+      <PageShell>
+        <div className="container-wide py-10">
+          Loading articles...
+        </div>
+      </PageShell>
+    );
+  }
+
   return (
     <PageShell>
       <div className="container-wide py-10">
@@ -31,24 +44,46 @@ function MyArticles() {
                 <TableHead className="text-right"><ThumbsUp className="ml-auto h-4 w-4" /></TableHead>
                 <TableHead className="text-right"><MessageCircle className="ml-auto h-4 w-4" /></TableHead>
                 <TableHead>Published</TableHead>
-                <TableHead></TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {arts.map((a) => (
+              {arts.map((a: any) => (
                 <TableRow key={a.id}>
                   <TableCell className="max-w-md">
                     <Link to="/article/$slug" params={{ slug: a.slug }} className="font-medium hover:underline">{a.title}</Link>
-                    <div className="line-clamp-1 text-xs text-muted-foreground">{a.subtitle}</div>
+                    <div className="line-clamp-1 text-xs text-muted-foreground">{a.excerpt}</div>
                   </TableCell>
                   <TableCell><Badge className="rounded-full" variant="secondary">Published</Badge></TableCell>
-                  <TableCell className="text-right tabular-nums">{a.views.toLocaleString()}</TableCell>
-                  <TableCell className="text-right tabular-nums">{a.claps.toLocaleString()}</TableCell>
-                  <TableCell className="text-right tabular-nums">{a.responses}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{new Date(a.publishedAt).toLocaleDateString()}</TableCell>
-                  <TableCell><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></TableCell>
+                  <TableCell className="text-right tabular-nums">{(a.views || 0).toLocaleString()}</TableCell>
+                  <TableCell className="text-right tabular-nums">{(a.likes || 0).toLocaleString()}</TableCell>
+                  <TableCell className="text-right tabular-nums">{a.comments || 0}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{a.publishedAt ? new Date(a.publishedAt).toLocaleDateString() : "Draft"}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1">
+                      <Button asChild variant="ghost" size="icon" title="Edit story">
+                        <Link to="/writer/editor" search={{ id: a.id }}><Pencil className="h-4 w-4" /></Link>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Delete story"
+                        onClick={() => deleteArticle(a.id)}
+                        disabled={isDeleting}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))}
+              {arts.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
+                    You haven't published any stories yet.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </div>

@@ -1,6 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { AlertTriangle, CheckCircle2, Eye, Flag, TrendingUp, Users } from "lucide-react";
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
+import { AlertTriangle, CheckCircle2, Eye, Flag, Shield, Trash2, TrendingUp, Users } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { useEffect } from "react";
+import { toast } from "sonner";
 
 import { PageShell } from "@/components/site-header";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -10,34 +12,93 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { articles, getUser, publications, users, viewsSeries } from "@/lib/mock-data";
+import {
+  useAdminArticles,
+  useAdminStats,
+  useAdminUsers,
+  useDeleteAdminArticle,
+  useDeleteAdminUser,
+  useToggleUserRole,
+} from "@/hooks/use-admin";
+import { useAuth } from "@/hooks/use-auth";
+import { viewsSeries } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin console — Prosely" }, { name: "robots", content: "noindex" }] }),
   component: Admin,
 });
 
-const flagged = [
-  { id: "f1", articleId: "a3", reason: "Spam / self-promotion", reporter: "u5", severity: "low" },
-  { id: "f2", articleId: "a2", reason: "Copyright claim", reporter: "u4", severity: "high" },
-  { id: "f3", articleId: "a5", reason: "Misinformation", reporter: "u3", severity: "medium" },
-];
-
 function Admin() {
+  const navigate = useNavigate();
+  const { data: user, isLoading: isAuthLoading } = useAuth();
+
+  const { data: statsData } = useAdminStats();
+  const { data: adminUsers = [], isLoading: isUsersLoading } = useAdminUsers();
+  const { data: adminArticles = [], isLoading: isArticlesLoading } = useAdminArticles();
+
+  const { mutate: deleteUser, isPending: isDeletingUser } = useDeleteAdminUser();
+  const { mutate: deleteArticle, isPending: isDeletingArticle } = useDeleteAdminArticle();
+  const { mutate: toggleRole, isPending: isTogglingRole } = useToggleUserRole();
+
+  useEffect(() => {
+    if (!isAuthLoading && (!user || user.role !== "admin")) {
+      toast.error("Access denied. Admin privileges required.");
+      navigate({ to: "/" });
+    }
+  }, [user, isAuthLoading, navigate]);
+
+  if (isAuthLoading || !user || user.role !== "admin") {
+    return (
+      <PageShell>
+        <div className="container-wide py-20 text-center text-muted-foreground">
+          Checking authorization...
+        </div>
+      </PageShell>
+    );
+  }
+
   const stats = [
-    { label: "Total users", value: "24,180", icon: Users, delta: "+412 this week" },
-    { label: "Articles published", value: "8,942", icon: TrendingUp, delta: "+128 this week" },
-    { label: "Daily active readers", value: "62,540", icon: Eye, delta: "+3.2%" },
-    { label: "Open reports", value: String(flagged.length), icon: Flag, delta: "Needs review" },
+    { label: "Total registered users", value: (statsData?.totalUsers || adminUsers.length || 0).toLocaleString(), icon: Users, delta: "Active platform users" },
+    { label: "Articles published", value: (statsData?.publishedArticles || 0).toLocaleString(), icon: TrendingUp, delta: `Out of ${statsData?.totalArticles || 0} total stories` },
+    { label: "Total article views", value: (statsData?.totalViews || 0).toLocaleString(), icon: Eye, delta: "Across all stories" },
+    { label: "Total comments", value: (statsData?.totalComments || 0).toLocaleString(), icon: Flag, delta: "Community engagements" },
   ];
+
+  const handleDeleteUserClick = (targetUser: any) => {
+    if (targetUser.id === user.id) {
+      toast.error("You cannot delete your own admin account.");
+      return;
+    }
+    if (window.confirm(`Are you sure you want to delete user "${targetUser.name}" (@${targetUser.username})? All their published stories and comments will be permanently deleted.`)) {
+      deleteUser(targetUser.id);
+    }
+  };
+
+  const handleToggleRoleClick = (targetUser: any) => {
+    if (targetUser.id === user.id) {
+      toast.error("You cannot change your own admin role.");
+      return;
+    }
+    const nextRole = targetUser.role === "admin" ? "user" : "admin";
+    if (window.confirm(`Are you sure you want to change "${targetUser.name}" role to ${nextRole}?`)) {
+      toggleRole(targetUser.id);
+    }
+  };
+
+  const handleDeleteArticleClick = (targetArticle: any) => {
+    if (window.confirm(`Are you sure you want to delete story "${targetArticle.title}"?`)) {
+      deleteArticle(targetArticle.id);
+    }
+  };
+
   return (
     <PageShell>
       <div className="container-wide py-10">
         <div className="flex items-center gap-3">
-          <Badge className="rounded-full" variant="outline">Admin</Badge>
-          <h1 className="font-serif text-4xl font-semibold">Platform console</h1>
+          <Badge className="rounded-full bg-primary text-primary-foreground">Admin Console</Badge>
+          <h1 className="font-serif text-4xl font-semibold">Platform Management</h1>
         </div>
-        <p className="mt-1 text-muted-foreground">Manage users, moderate content, and monitor platform activity.</p>
+        <p className="mt-1 text-muted-foreground">Manage user accounts, moderate platform articles, and monitor system metrics.</p>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {stats.map((s) => (
@@ -46,22 +107,144 @@ function Admin() {
                 <CardTitle className="text-sm font-medium text-muted-foreground">{s.label}</CardTitle>
                 <s.icon className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
-              <CardContent><div className="font-serif text-3xl font-semibold">{s.value}</div><div className="mt-1 text-xs text-muted-foreground">{s.delta}</div></CardContent>
+              <CardContent>
+                <div className="font-serif text-3xl font-semibold">{s.value}</div>
+                <div className="mt-1 text-xs text-muted-foreground">{s.delta}</div>
+              </CardContent>
             </Card>
           ))}
         </div>
 
-        <Tabs defaultValue="activity" className="mt-8">
+        <Tabs defaultValue="users" className="mt-8">
           <TabsList>
-            <TabsTrigger value="activity">Activity</TabsTrigger>
-            <TabsTrigger value="mod">Moderation ({flagged.length})</TabsTrigger>
-            <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="pubs">Publications</TabsTrigger>
+            <TabsTrigger value="users">Users ({adminUsers.length})</TabsTrigger>
+            <TabsTrigger value="articles">Articles Moderation ({adminArticles.length})</TabsTrigger>
+            <TabsTrigger value="activity">Analytics</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="users" className="mt-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Registered Users</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>User</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead className="text-right">Stories</TableHead>
+                      <TableHead className="text-right">Followers</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {adminUsers.map((u: any) => (
+                      <TableRow key={u.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-9 w-9">
+                              <AvatarImage src={u.avatar} />
+                              <AvatarFallback>{u.name?.[0] || "U"}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <div className="flex items-center gap-1 text-sm font-medium">
+                                {u.name}
+                                {u.role === "admin" && <Shield className="h-3.5 w-3.5 text-primary" />}
+                              </div>
+                              <div className="text-xs text-muted-foreground">@{u.username} · {u.email}</div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={u.role === "admin" ? "default" : "outline"} className="rounded-full capitalize">
+                            {u.role}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">{u.articlesCount || 0}</TableCell>
+                        <TableCell className="text-right tabular-nums">{(u.followers || 0).toLocaleString()}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            {u.id !== user.id && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleToggleRoleClick(u)}
+                                  disabled={isTogglingRole}
+                                >
+                                  {u.role === "admin" ? "Demote to User" : "Make Admin"}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => handleDeleteUserClick(u)}
+                                  disabled={isDeletingUser}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </>
+                            )}
+                            {u.id === user.id && (
+                              <span className="text-xs text-muted-foreground italic py-1">Current User</span>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {adminUsers.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
+                          No users found.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="articles" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Article Moderation</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {adminArticles.map((a: any) => (
+                  <div key={a.id} className="flex flex-wrap items-center gap-4 rounded-lg border border-border/60 p-4">
+                    <img src={a.coverImage || "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400"} alt="" className="h-14 w-20 rounded object-cover" />
+                    <div className="min-w-0 flex-1">
+                      <Link to="/article/$slug" params={{ slug: a.slug }} className="line-clamp-1 font-medium hover:underline">
+                        {a.title}
+                      </Link>
+                      <div className="text-xs text-muted-foreground">
+                        By {a.author?.name} (@{a.author?.username}) · {a.views || 0} views · {a.likes || 0} likes · {a.comments || 0} comments
+                      </div>
+                    </div>
+                    <Badge variant={a.status === "published" ? "secondary" : "outline"} className="rounded-full capitalize">
+                      {a.status}
+                    </Badge>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => handleDeleteArticleClick(a)}
+                      disabled={isDeletingArticle}
+                    >
+                      <Trash2 className="mr-1 h-3.5 w-3.5" /> Delete Article
+                    </Button>
+                  </div>
+                ))}
+                {adminArticles.length === 0 && (
+                  <p className="py-8 text-center text-muted-foreground">No articles published yet.</p>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="activity" className="mt-6">
             <Card>
-              <CardHeader><CardTitle>Platform views (7d)</CardTitle></CardHeader>
+              <CardHeader><CardTitle>Platform Views Analytics</CardTitle></CardHeader>
               <CardContent>
                 <ChartContainer config={{ views: { label: "Views", color: "var(--chart-1)" }, reads: { label: "Reads", color: "var(--chart-2)" } }} className="h-80 w-full">
                   <BarChart data={viewsSeries}>
@@ -75,62 +258,6 @@ function Admin() {
                 </ChartContainer>
               </CardContent>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="mod" className="mt-6">
-            <Card>
-              <CardHeader><CardTitle>Flagged content</CardTitle></CardHeader>
-              <CardContent className="space-y-4">
-                {flagged.map((f) => {
-                  const a = articles.find((x) => x.id === f.articleId)!;
-                  const reporter = getUser(f.reporter);
-                  return (
-                    <div key={f.id} className="flex flex-wrap items-center gap-4 rounded-lg border border-border/60 p-4">
-                      <img src={a.cover} alt="" className="h-14 w-20 rounded object-cover" />
-                      <div className="min-w-0 flex-1">
-                        <div className="line-clamp-1 font-medium">{a.title}</div>
-                        <div className="text-xs text-muted-foreground">Reported by {reporter.name} · {f.reason}</div>
-                      </div>
-                      <Badge variant={f.severity === "high" ? "destructive" : "secondary"} className="rounded-full capitalize">
-                        <AlertTriangle className="mr-1 h-3 w-3" />{f.severity}
-                      </Badge>
-                      <div className="flex gap-2"><Button size="sm" variant="outline">Dismiss</Button><Button size="sm">Review</Button></div>
-                    </div>
-                  );
-                })}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="users" className="mt-6">
-            <Card>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader><TableRow><TableHead>User</TableHead><TableHead>Role</TableHead><TableHead className="text-right">Followers</TableHead><TableHead>Status</TableHead><TableHead></TableHead></TableRow></TableHeader>
-                  <TableBody>
-                    {users.map((u) => (
-                      <TableRow key={u.id}>
-                        <TableCell><div className="flex items-center gap-3"><Avatar className="h-8 w-8"><AvatarImage src={u.avatar} /><AvatarFallback>{u.name[0]}</AvatarFallback></Avatar><div><div className="text-sm font-medium">{u.name}</div><div className="text-xs text-muted-foreground">@{u.handle}</div></div></div></TableCell>
-                        <TableCell><Badge variant="outline" className="rounded-full capitalize">{u.role}</Badge></TableCell>
-                        <TableCell className="text-right tabular-nums">{u.followers.toLocaleString()}</TableCell>
-                        <TableCell><span className="inline-flex items-center gap-1 text-xs text-primary"><CheckCircle2 className="h-3.5 w-3.5" /> Active</span></TableCell>
-                        <TableCell><Button size="sm" variant="ghost">Manage</Button></TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="pubs" className="mt-6 grid gap-4 sm:grid-cols-2">
-            {publications.map((p) => (
-              <div key={p.id} className="flex items-center gap-4 rounded-lg border border-border/60 bg-card p-4">
-                <Avatar className="h-12 w-12 rounded-md"><AvatarImage src={p.logo} /><AvatarFallback>{p.name[0]}</AvatarFallback></Avatar>
-                <div className="min-w-0 flex-1"><div className="font-medium">{p.name}</div><div className="text-xs text-muted-foreground">{p.subscribers.toLocaleString()} subscribers · {p.writerIds.length} writers</div></div>
-                <Button size="sm" variant="outline">Manage</Button>
-              </div>
-            ))}
           </TabsContent>
         </Tabs>
       </div>

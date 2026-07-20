@@ -4,7 +4,8 @@ import { PageShell } from "@/components/site-header";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { followingIds, publications, users } from "@/lib/mock-data";
+import { useFollowing, useToggleFollow } from "@/hooks/use-auth";
+import { publications } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/following")({
   head: () => ({ meta: [{ title: "Following — Prosely" }] }),
@@ -12,7 +13,19 @@ export const Route = createFileRoute("/following")({
 });
 
 function Following() {
-  const writers = users.filter((u) => followingIds.includes(u.id));
+  const { data: writers = [], isLoading } = useFollowing();
+  const { mutate: toggleFollow, isPending } = useToggleFollow();
+
+  if (isLoading) {
+    return (
+      <PageShell>
+        <div className="container-wide py-12">
+          Loading followed writers...
+        </div>
+      </PageShell>
+    );
+  }
+
   return (
     <PageShell>
       <div className="container-wide py-12">
@@ -23,13 +36,30 @@ function Following() {
             <TabsTrigger value="pubs">Publications ({publications.length})</TabsTrigger>
           </TabsList>
           <TabsContent value="writers" className="mt-6 grid gap-4 sm:grid-cols-2">
-            {writers.map((u) => (
+            {writers.map((u: any) => (
               <div key={u.id} className="flex items-center gap-4 rounded-lg border border-border/60 p-4">
-                <Avatar className="h-12 w-12"><AvatarImage src={u.avatar} /><AvatarFallback>{u.name[0]}</AvatarFallback></Avatar>
-                <div className="min-w-0 flex-1"><div className="font-medium">{u.name}</div><div className="line-clamp-1 text-xs text-muted-foreground">{u.bio}</div><div className="text-xs text-muted-foreground">{u.followers.toLocaleString()} followers</div></div>
-                <Button size="sm" variant="outline" className="rounded-full">Following</Button>
+                <Avatar className="h-12 w-12"><AvatarImage src={u.avatar} /><AvatarFallback>{u.name?.[0] || "U"}</AvatarFallback></Avatar>
+                <div className="min-w-0 flex-1">
+                  <div className="font-medium">{u.name}</div>
+                  <div className="line-clamp-1 text-xs text-muted-foreground">{u.bio}</div>
+                  <div className="text-xs text-muted-foreground">{(u.followers?.length || 0).toLocaleString()} followers</div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="rounded-full"
+                  onClick={() => toggleFollow(u.id)}
+                  disabled={isPending}
+                >
+                  Following
+                </Button>
               </div>
             ))}
+            {writers.length === 0 && (
+              <div className="col-span-2 py-8 text-muted-foreground">
+                You are not following any writers yet.
+              </div>
+            )}
           </TabsContent>
           <TabsContent value="pubs" className="mt-6 grid gap-4 sm:grid-cols-2">
             {publications.map((p) => (

@@ -43,10 +43,37 @@ const userSchema = new mongoose.Schema(
       default: "",
     },
 
+    role: {
+      type: String,
+      enum: ["user", "admin"],
+      default: "user",
+    },
+
     avatar: {
       type: String,
       default: "",
     },
+
+    bookmarks: [
+      {
+        type: String,
+        ref: "Article",
+      },
+    ],
+
+    following: [
+      {
+        type: String,
+        ref: "User",
+      },
+    ],
+
+    followers: [
+      {
+        type: String,
+        ref: "User",
+      },
+    ],
   },
   {
     timestamps: true,

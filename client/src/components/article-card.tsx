@@ -4,6 +4,8 @@ import { Bookmark, MessageCircle, ThumbsUp } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 
+import { useAuth, useToggleBookmark } from "@/hooks/use-auth";
+
 interface ArticleCardProps {
   article: {
     id: string;
@@ -36,6 +38,10 @@ export function ArticleCard({
   article,
   compact = false,
 }: ArticleCardProps) {
+  const { data: user } = useAuth();
+  const { mutate: toggleBookmark, isPending } = useToggleBookmark();
+  const isBookmarked = user?.bookmarks?.includes(article.id);
+
   return (
     <article className="group grid grid-cols-1 gap-6 border-b border-border/60 py-6 sm:grid-cols-[1fr_180px] sm:gap-8">
       <div className="min-w-0">
@@ -113,7 +119,10 @@ export function ArticleCard({
               {fmt(article.comments)}
             </span>
 
-            <Bookmark className="h-4 w-4 cursor-pointer hover:text-foreground" />
+            <Bookmark
+              className={`h-4 w-4 cursor-pointer hover:text-foreground ${isBookmarked ? "fill-primary text-primary" : ""}`}
+              onClick={() => !isPending && toggleBookmark(article.id)}
+            />
           </span>
         </div>
       </div>

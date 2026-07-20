@@ -1,18 +1,23 @@
-import { Link, createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Image as ImageIcon, Bold, Heading2, Italic, Link2, List, Quote, X } from "lucide-react";
-import { useRef, useState, type ComponentType } from "react";
+import { useRef, useState, useEffect, type ComponentType } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import { PageShell } from "@/components/site-header";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { currentUser } from "@/lib/mock-data";
-
-import { useCreateArticle } from "@/hooks/use-article";
-import { useNavigate } from "@tanstack/react-router";
-import { toast } from "sonner";
+import { useCreateArticle, useUpdateArticle, useMyArticles } from "@/hooks/use-article";
+import { useAuth } from "@/hooks/use-auth";
+import { getArticleDetails } from "@/lib/article";
 
 export const Route = createFileRoute("/writer/editor")({
-  head: () => ({ meta: [{ title: "New story — Prosely" }] }),
+  validateSearch: (search: Record<string, unknown>) => {
+    return {
+      id: (search.id as string) || undefined,
+    };
+  },
+  head: () => ({ meta: [{ title: "Editor — Prosely" }] }),
   component: Editor,
 });
 
@@ -28,19 +33,52 @@ const TOOLS: { id: ToolId; icon: ComponentType<{ className?: string }>; label: s
 ];
 
 function Editor() {
+  const { id } = Route.useSearch();
+  const { data: user } = useAuth();
+  const { data: myArticles = [] } = useMyArticles();
+
+  const { data: fetchedArticle } = useQuery({
+    queryKey: ["article-edit", id],
+    queryFn: async () => {
+      if (!id) return null;
+      try {
+        const { data } = await getArticleDetails(id);
+        return data;
+      } catch {
+        return null;
+      }
+    },
+    enabled: !!id,
+  });
+
+  const existingArticle = fetchedArticle || myArticles.find((a: any) => a.id === id || a.slug === id);
+
   const [title, setTitle] = useState("");
   const [subtitle, setSubtitle] = useState("");
   const [cover, setCover] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [body, setBody] = useState("");
+  const [isLoaded, setIsLoaded] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const words = body.trim().split(/\s+/).filter(Boolean).length;
 
   const navigate = useNavigate();
 
-  const { mutateAsync: createArticle, isPending } =
-    useCreateArticle();
+  const { mutateAsync: createArticle, isPending: isCreating } = useCreateArticle();
+  const { mutateAsync: updateArticle, isPending: isUpdating } = useUpdateArticle();
+  const isPending = isCreating || isUpdating;
+
+  useEffect(() => {
+    if (existingArticle && !isLoaded) {
+      setTitle(existingArticle.title || "");
+      setSubtitle(existingArticle.excerpt || "");
+      setCover(existingArticle.coverImage || "");
+      setTags(existingArticle.tags || []);
+      setBody(existingArticle.content || "");
+      setIsLoaded(true);
+    }
+  }, [existingArticle, isLoaded]);
 
   function insertAtCursor(before: string, after = "", placeholder = "") {
     const el = textareaRef.current;
@@ -97,33 +135,43 @@ function Editor() {
     }
 
     try {
-      const { data } = await createArticle({
+      const payload = {
         title,
         excerpt: subtitle,
         content: body,
         coverImage: cover,
         tags,
-        status: "published",
-      });
+        status: "published" as const,
+      };
 
-      navigate({
-        to: `/article/${data.slug}`,
-      });
+      if (id) {
+        await updateArticle({ id, data: payload });
+        const slug = existingArticle?.slug || id;
+        navigate({ to: `/article/${slug}` });
+      } else {
+        const { data } = await createArticle(payload);
+        navigate({ to: `/article/${data.slug}` });
+      }
     } catch {}
   };
 
   const saveDraft = async () => {
     try {
-      await createArticle({
+      const payload = {
         title,
         excerpt: subtitle,
         content: body,
         coverImage: cover,
         tags,
-        status: "draft",
-      });
+        status: "draft" as const,
+      };
 
-      toast.success("Draft saved");
+      if (id) {
+        await updateArticle({ id, data: payload });
+      } else {
+        await createArticle(payload);
+        toast.success("Draft saved");
+      }
     } catch {}
   };
   return (
@@ -131,8 +179,8 @@ function Editor() {
       <div className="container-prose py-8">
         <div className="mb-6 flex items-center justify-between text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
-            <Avatar className="h-8 w-8"><AvatarImage src={currentUser.avatar} /><AvatarFallback>{currentUser.name[0]}</AvatarFallback></Avatar>
-            <span>Draft by <span className="text-foreground">{currentUser.name}</span></span>
+            <Avatar className="h-8 w-8"><AvatarImage src={user?.avatar} /><AvatarFallback>{user?.name?.[0] || "U"}</AvatarFallback></Avatar>
+            <span>Draft by <span className="text-foreground">{user?.name || "Guest"}</span></span>
             <span>· Saved just now</span>
           </div>
           <div className="flex items-center gap-2">

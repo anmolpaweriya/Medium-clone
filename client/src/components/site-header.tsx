@@ -1,4 +1,4 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { Bell, Bookmark, Feather, Search, Settings, User } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -16,6 +16,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useQueryClient } from "@tanstack/react-query";
 
 export function SiteHeader() {
+  const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { data: user, isLoading} = useAuth();
   const queryClient = useQueryClient();
@@ -40,7 +41,14 @@ export function SiteHeader() {
         </Link>
 
         <form
-          onSubmit={(e) => e.preventDefault()}
+          onSubmit={(e) => {
+            e.preventDefault();
+            const form = e.currentTarget;
+            const input = form.querySelector("input") as HTMLInputElement;
+            if (input && input.value.trim()) {
+              navigate({ to: "/search", search: { q: input.value.trim() } });
+            }
+          }}
           className="relative ml-4 hidden flex-1 max-w-md md:block"
         >
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

@@ -1,5 +1,5 @@
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Bell, Lock, User, Palette, Shield, Trash2, Mail, Globe } from "lucide-react";
 
@@ -23,7 +23,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { currentUser } from "@/lib/mock-data";
+import { useAuth, useUpdateProfile } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({ meta: [{ title: "Settings — Prosely" }] }),
@@ -32,13 +32,25 @@ export const Route = createFileRoute("/settings")({
 
 function Settings() {
   const navigate = useNavigate();
+  const { data: user, isLoading } = useAuth();
+  const { mutate: updateProfile, isPending } = useUpdateProfile();
 
   // Account
-  const [name, setName] = useState(currentUser.name);
-  const [handle, setHandle] = useState(currentUser.handle);
-  const [bio, setBio] = useState(currentUser.bio);
-  const [avatar, setAvatar] = useState(currentUser.avatar);
-  const [email, setEmail] = useState(`${currentUser.handle}@prosely.dev`);
+  const [name, setName] = useState("");
+  const [handle, setHandle] = useState("");
+  const [bio, setBio] = useState("");
+  const [avatar, setAvatar] = useState("");
+  const [email, setEmail] = useState("");
+
+  useEffect(() => {
+    if (user) {
+      setName(user.name || "");
+      setHandle(user.username || "");
+      setBio(user.bio || "");
+      setAvatar(user.avatar || "");
+      setEmail(user.email || "");
+    }
+  }, [user]);
 
   // Password
   const [currentPw, setCurrentPw] = useState("");
@@ -65,7 +77,13 @@ function Settings() {
 
   function saveAccount(e: React.FormEvent) {
     e.preventDefault();
-    toast.success("Account details saved");
+    updateProfile({
+      name,
+      username: handle,
+      bio,
+      avatar,
+      email,
+    });
   }
 
   function savePassword(e: React.FormEvent) {
@@ -74,6 +92,16 @@ function Settings() {
     if (newPw !== confirmPw) return toast.error("Passwords don't match");
     setCurrentPw(""); setNewPw(""); setConfirmPw("");
     toast.success("Password updated");
+  }
+
+  if (isLoading) {
+    return (
+      <PageShell>
+        <div className="container-wide py-12 text-center">
+          Loading settings...
+        </div>
+      </PageShell>
+    );
   }
 
   return (
@@ -103,14 +131,14 @@ function Settings() {
                   <div className="flex items-center gap-4">
                     <Avatar className="h-16 w-16">
                       <AvatarImage src={avatar} alt={name} />
-                      <AvatarFallback>{name[0]}</AvatarFallback>
+                      <AvatarFallback>{name[0] || "U"}</AvatarFallback>
                     </Avatar>
                     <div className="flex gap-2">
                       <Button type="button" variant="outline" size="sm" onClick={() => {
                         const url = window.prompt("New avatar image URL", avatar);
                         if (url) setAvatar(url);
                       }}>Change photo</Button>
-                      <Button type="button" variant="ghost" size="sm" onClick={() => setAvatar(currentUser.avatar)}>Reset</Button>
+                      <Button type="button" variant="ghost" size="sm" onClick={() => setAvatar(user?.avatar || "")}>Reset</Button>
                     </div>
                   </div>
 

@@ -4,7 +4,8 @@ import { Flame } from "lucide-react";
 import { ArticleCard } from "@/components/article-card";
 import { PageShell } from "@/components/site-header";
 import { Badge } from "@/components/ui/badge";
-import { publishedArticles, trendingTags } from "@/lib/mock-data";
+import { useTrendingFeed } from "@/hooks/use-article";
+import { trendingTags } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/trending")({
   head: () => ({ meta: [{ title: "Trending — Prosely" }, { name: "description", content: "The most-read articles on Prosely this week." }] }),
@@ -12,7 +13,18 @@ export const Route = createFileRoute("/trending")({
 });
 
 function Trending() {
-  const sorted = [...publishedArticles()].sort((a, b) => b.claps - a.claps);
+  const { data: trendingArticles = [], isLoading } = useTrendingFeed();
+
+  if (isLoading) {
+    return (
+      <PageShell>
+        <div className="container-wide py-12">
+          Loading trending articles...
+        </div>
+      </PageShell>
+    );
+  }
+
   return (
     <PageShell>
       <div className="container-wide py-12">
@@ -24,12 +36,15 @@ function Trending() {
           {trendingTags.map((t) => (<Badge key={t} variant="secondary" className="rounded-full">{t}</Badge>))}
         </div>
         <div className="grid gap-2 md:grid-cols-[1fr_1fr]">
-          {sorted.map((a, i) => (
+          {trendingArticles.map((a: any, i: number) => (
             <div key={a.id} className="flex items-start gap-4">
               <span className="mt-6 w-8 shrink-0 font-serif text-3xl text-muted-foreground/50">{String(i + 1).padStart(2, "0")}</span>
               <div className="flex-1"><ArticleCard article={a} compact /></div>
             </div>
           ))}
+          {trendingArticles.length === 0 && (
+            <p className="col-span-2 text-muted-foreground">No trending articles found.</p>
+          )}
         </div>
       </div>
     </PageShell>

@@ -8,9 +8,13 @@ import {
   getFeed,
   getFollowingFeed,
   getTopicsFeed,
+  getTrendingFeed,
   type CreateArticlePayload,
   getArticleDetails,
   getArticleComments,
+  likeArticle,
+  postComment,
+  deleteComment,
 } from "@/lib/article";
 import api from "@/lib/api";
 
@@ -37,17 +41,32 @@ export function useCreateArticle() {
   });
 }
 
-export function useUpdateArticle(id: string) {
+export function useUpdateArticle() {
+  const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: Partial<CreateArticlePayload>) =>
+    mutationFn: ({ id, data }: { id: string; data: Partial<CreateArticlePayload> }) =>
       updateArticle(id, data),
-
     onSuccess: () => {
-      toast.success("Draft saved");
+      queryClient.invalidateQueries({ queryKey: ["my-articles"] });
+      queryClient.invalidateQueries({ queryKey: ["article"] });
+      toast.success("Article saved");
     },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || "Failed to save article");
+    },
+  });
+}
 
+export function useDeleteArticle() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteArticle(id),
+    onSuccess: () => {
+      toast.success("Article deleted");
+      queryClient.invalidateQueries({ queryKey: ["my-articles"] });
+    },
     onError: () => {
-      toast.error("Failed to save draft");
+      toast.error("Failed to delete article");
     },
   });
 }
@@ -96,6 +115,16 @@ export function useTopicsFeed() {
   });
 }
 
+export function useTrendingFeed() {
+  return useQuery({
+    queryKey: ["trending-feed"],
+    queryFn: async () => {
+      const { data } = await getTrendingFeed();
+      return data;
+    },
+  });
+}
+
 
 
 export function useArticle(slug: string) {
@@ -136,4 +165,53 @@ export function useRelatedArticles(tags: string[], currentSlug: string) {
         },
         enabled: tags.length > 0,
     });
+}
+
+export function useToggleLike(articleId: string, slug?: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => likeArticle(articleId),
+    onSuccess: () => {
+      if (slug) {
+        queryClient.invalidateQueries({ queryKey: ["article", slug] });
+      }
+      queryClient.invalidateQueries({ queryKey: ["feed"] });
+      queryClient.invalidateQueries({ queryKey: ["home"] });
+      queryClient.invalidateQueries({ queryKey: ["my-articles"] });
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || "Failed to toggle like");
+    },
+  });
+}
+
+export function useCreateComment(articleId: string, slug?: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (content: string) => postComment({ articleId, content }),
+    onSuccess: () => {
+      toast.success("Response posted");
+      queryClient.invalidateQueries({ queryKey: ["comments", articleId] });
+      if (slug) {
+        queryClient.invalidateQueries({ queryKey: ["article", slug] });
+      }
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || "Failed to post comment");
+    },
+  });
+}
+
+export function useDeleteComment(articleId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (commentId: string) => deleteComment(commentId),
+    onSuccess: () => {
+      toast.success("Comment deleted");
+      queryClient.invalidateQueries({ queryKey: ["comments", articleId] });
+    },
+    onError: () => {
+      toast.error("Failed to delete comment");
+    },
+  });
 }
