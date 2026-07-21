@@ -1,4 +1,4 @@
-import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "react-router-dom";
 import { Feather } from "lucide-react";
 import { useState } from "react";
 
@@ -9,12 +9,7 @@ import { Label } from "@/components/ui/label";
 import { getMe, login } from "@/lib/auth";
 import { useQueryClient } from "@tanstack/react-query";
 
-export const Route = createFileRoute("/login")({
-  head: () => ({ meta: [{ title: "Sign in — Prosely" }] }),
-  component: Login,
-});
-
-function Login() {
+export default function Login() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -54,7 +49,7 @@ function Login() {
         },
       });
 
-      navigate({ to: "/feed" });
+      navigate("/feed");
     } catch (err: any) {
       setError(err.response?.data?.message || "Invalid email or password");
     } finally {

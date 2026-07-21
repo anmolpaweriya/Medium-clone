@@ -1,4 +1,4 @@
-import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Image as ImageIcon, Bold, Heading2, Italic, Link2, List, Quote, X } from "lucide-react";
 import { useRef, useState, useEffect, type ComponentType } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -11,16 +11,6 @@ import { useCreateArticle, useUpdateArticle, useMyArticles } from "@/hooks/use-a
 import { useAuth } from "@/hooks/use-auth";
 import { getArticleDetails } from "@/lib/article";
 
-export const Route = createFileRoute("/writer/editor")({
-  validateSearch: (search: Record<string, unknown>) => {
-    return {
-      id: (search.id as string) || undefined,
-    };
-  },
-  head: () => ({ meta: [{ title: "Editor — Prosely" }] }),
-  component: Editor,
-});
-
 type ToolId = "bold" | "italic" | "h2" | "quote" | "list" | "link" | "image";
 const TOOLS: { id: ToolId; icon: ComponentType<{ className?: string }>; label: string }[] = [
   { id: "bold", icon: Bold, label: "Bold" },
@@ -32,8 +22,10 @@ const TOOLS: { id: ToolId; icon: ComponentType<{ className?: string }>; label: s
   { id: "image", icon: ImageIcon, label: "Image" },
 ];
 
-function Editor() {
-  const { id } = Route.useSearch();
+export default function Editor() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const id = searchParams.get("id") || undefined;
   const { data: user } = useAuth();
   const { data: myArticles = [] } = useMyArticles();
 
@@ -62,8 +54,6 @@ function Editor() {
   const [isLoaded, setIsLoaded] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const words = body.trim().split(/\s+/).filter(Boolean).length;
-
-  const navigate = useNavigate();
 
   const { mutateAsync: createArticle, isPending: isCreating } = useCreateArticle();
   const { mutateAsync: updateArticle, isPending: isUpdating } = useUpdateArticle();
@@ -145,12 +135,12 @@ function Editor() {
       };
 
       if (id) {
-        await updateArticle({ id, data: payload });
-        const slug = existingArticle?.slug || id;
-        navigate({ to: `/article/${slug}` });
+        const { data } = await updateArticle({ id, data: payload });
+        const slug = data?.slug || existingArticle?.slug || id;
+        navigate(`/article/${slug}`);
       } else {
         const { data } = await createArticle(payload);
-        navigate({ to: `/article/${data.slug}` });
+        navigate(`/article/${data.slug}`);
       }
     } catch {}
   };

@@ -1,4 +1,4 @@
-import { Link, createFileRoute, notFound, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { Bookmark, MessageCircle, Share2, ThumbsUp, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 
@@ -16,40 +16,10 @@ import {
 } from "@/hooks/use-article";
 import { useAuth, useToggleFollow, useToggleBookmark } from "@/hooks/use-auth";
 import { MarkdownViewer } from "@/components/markdown-viewer";
-import { getArticleDetails } from "@/lib/article";
 
-export const Route = createFileRoute("/article/$slug")({
-  loader: async ({ context: { queryClient }, params }) => {
-    try {
-      const article = await queryClient.ensureQueryData({
-        queryKey: ["article", params.slug],
-        queryFn: async () => {
-          const { data } = await getArticleDetails(params.slug);
-          return data;
-        },
-      });
-      return { slug: params.slug, article };
-    } catch {
-      return { slug: params.slug };
-    }
-  },
-  head: ({ loaderData }) => ({
-    meta: loaderData?.article ? [
-      { title: `${loaderData.article.title} — Prosely` },
-      { name: "description", content: loaderData.article.excerpt },
-      { property: "og:title", content: loaderData.article.title },
-      { property: "og:description", content: loaderData.article.excerpt },
-      { property: "og:image", content: loaderData.article.coverImage },
-    ] : [{ title: "Article — Prosely" }],
-  }),
-  errorComponent: ({ error }) => <PageShell><div className="container-prose py-20 text-center"><p className="text-muted-foreground">{error.message}</p></div></PageShell>,
-  notFoundComponent: () => <PageShell><div className="container-prose py-20 text-center"><h1 className="font-serif text-3xl">Story not found</h1></div></PageShell>,
-  component: ArticleDetail,
-});
-
-function ArticleDetail() {
+export default function ArticleDetail() {
   const navigate = useNavigate();
-  const { slug } = Route.useLoaderData();
+  const { slug } = useParams<{ slug: string }>();
   const [commentText, setCommentText] = useState("");
 
   const { data: user } = useAuth();
@@ -94,14 +64,20 @@ function ArticleDetail() {
   }
 
   if (isError || !article) {
-      throw notFound();
+    return (
+      <PageShell>
+        <div className="container-prose py-20 text-center">
+          <h1 className="font-serif text-3xl">Story not found</h1>
+        </div>
+      </PageShell>
+    );
   }
 
   return (
     <PageShell>
       <article className="container-prose pt-10">
         {pub && (
-          <Link to="/publication/$slug" params={{ slug: pub.slug }} className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+          <Link to={`/publication/${pub.slug}`} className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
             <Avatar className="h-6 w-6 rounded-md"><AvatarImage src={pub.logo} /><AvatarFallback>{pub.name[0]}</AvatarFallback></Avatar>
             <span>Published in <span className="text-foreground">{pub.name}</span></span>
           </Link>
@@ -149,7 +125,7 @@ function ArticleDetail() {
             {isOwnerOrAdmin && (
               <>
                 <Button asChild variant="outline" size="sm" className="rounded-full gap-1">
-                  <Link to="/writer/editor" search={{ id: article.id }}>
+                  <Link to={`/writer/editor?id=${article.id}`}>
                     <Pencil className="h-3.5 w-3.5" /> Edit
                   </Link>
                 </Button>
@@ -160,7 +136,7 @@ function ArticleDetail() {
                   onClick={() => {
                     if (window.confirm("Are you sure you want to delete this story?")) {
                       deleteArticle(article.id, {
-                        onSuccess: () => navigate({ to: "/writer/articles" }),
+                        onSuccess: () => navigate("/writer/articles"),
                       });
                     }
                   }}
@@ -262,7 +238,7 @@ function ArticleDetail() {
             <h2 className="mb-6 font-serif text-2xl font-semibold">More like this</h2>
             <div className="grid gap-6 md:grid-cols-3">
               {related.map((r: any) => (
-                <Link key={r.id} to="/article/$slug" params={{ slug: r.slug }} className="group block">
+                <Link key={r.id} to={`/article/${r.slug}`} className="group block">
                   {r.coverImage && <img src={r.coverImage} alt="" className="aspect-[4/3] w-full rounded-md object-cover" />}
                   <h3 className="mt-3 font-serif text-lg font-semibold leading-snug group-hover:opacity-90">{r.title}</h3>
                   <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{r.excerpt}</p>

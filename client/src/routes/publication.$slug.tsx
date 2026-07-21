@@ -1,4 +1,4 @@
-import { Link, createFileRoute, notFound } from "@tanstack/react-router";
+import { Link, useParams } from "react-router-dom";
 
 import { ArticleCard } from "@/components/article-card";
 import { PublicationHeader } from "@/components/publication-header";
@@ -7,20 +7,20 @@ import { PageShell } from "@/components/site-header";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { articlesByPublication, getPublication, getUser } from "@/lib/mock-data";
 
-export const Route = createFileRoute("/publication/$slug")({
-  loader: ({ params }) => {
-    const pub = getPublication(params.slug);
-    if (!pub) throw notFound();
-    return { pub };
-  },
-  head: ({ loaderData }) => ({ meta: loaderData ? [{ title: `${loaderData.pub.name} — Prosely` }, { name: "description", content: loaderData.pub.tagline }] : [] }),
-  errorComponent: ({ error }) => <PageShell><div className="container-prose py-20 text-center"><p className="text-muted-foreground">{error.message}</p></div></PageShell>,
-  notFoundComponent: () => <PageShell><div className="container-prose py-20 text-center"><h1 className="font-serif text-3xl">Publication not found</h1></div></PageShell>,
-  component: PubHome,
-});
+export default function PubHome() {
+  const { slug } = useParams<{ slug: string }>();
+  const pub = slug ? getPublication(slug) : undefined;
 
-function PubHome() {
-  const { pub } = Route.useLoaderData();
+  if (!pub) {
+    return (
+      <PageShell>
+        <div className="container-prose py-20 text-center">
+          <h1 className="font-serif text-3xl">Publication not found</h1>
+        </div>
+      </PageShell>
+    );
+  }
+
   const arts = articlesByPublication(pub.id);
   const [feature, ...rest] = arts;
   const writers = pub.writerIds.map(getUser);
@@ -33,7 +33,7 @@ function PubHome() {
       <div className="container-wide grid gap-10 py-10 md:grid-cols-[1fr_280px]">
         <div>
           {feature && (
-            <Link to="/article/$slug" params={{ slug: feature.slug }} className="group mb-10 block">
+            <Link to={`/article/${feature.slug}`} className="group mb-10 block">
               <img src={feature.cover} alt="" className="aspect-[16/8] w-full rounded-lg object-cover" />
               <h2 className="mt-4 font-serif text-3xl font-semibold group-hover:opacity-90">{feature.title}</h2>
               <p className="mt-2 text-muted-foreground">{feature.subtitle}</p>

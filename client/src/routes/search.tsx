@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { useSearchParams } from "react-router-dom";
 import { Search as SearchIcon } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -11,25 +11,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useFeed } from "@/hooks/use-article";
 import { publications, tags, users } from "@/lib/mock-data";
 
-export const Route = createFileRoute("/search")({
-  validateSearch: (search: Record<string, unknown>) => {
-    return {
-      q: (search.q as string) || "",
-    };
-  },
-  head: () => ({ meta: [{ title: "Search — Prosely" }] }),
-  component: SearchPage,
-});
-
-function SearchPage() {
-  const { q: initialQ } = Route.useSearch();
-  const [q, setQ] = useState(initialQ || "");
+export default function SearchPage() {
+  const [searchParams] = useSearchParams();
+  const initialQ = searchParams.get("q") || "";
+  const [q, setQ] = useState(initialQ);
   const { data: allArticles = [] } = useFeed();
 
   useEffect(() => {
-    if (initialQ !== undefined) {
-      setQ(initialQ);
-    }
+    setQ(initialQ);
   }, [initialQ]);
 
   const query = q.trim().toLowerCase();

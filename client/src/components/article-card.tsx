@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link } from "react-router-dom";
 import { Bookmark, MessageCircle, ThumbsUp } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -65,10 +65,7 @@ export function ArticleCard({
           <span>@{article.author.username}</span>
         </div>
 
-        <Link
-          to="/article/$slug"
-          params={{ slug: article.slug }}
-        >
+        <Link to={`/article/${article.slug}`}>
           <h3
             className={`font-serif font-bold group-hover:opacity-90 ${
               compact ? "text-lg" : "text-2xl"
@@ -128,10 +125,7 @@ export function ArticleCard({
       </div>
 
       {!compact && article.coverImage && (
-        <Link
-          to="/article/$slug"
-          params={{ slug: article.slug }}
-        >
+        <Link to={`/article/${article.slug}`}>
           <img
             src={article.coverImage}
             alt={article.title}

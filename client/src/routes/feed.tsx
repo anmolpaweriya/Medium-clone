@@ -1,5 +1,3 @@
-import { createFileRoute } from "@tanstack/react-router";
-
 import { ArticleCard } from "@/components/article-card";
 import { PageShell } from "@/components/site-header";
 import { Badge } from "@/components/ui/badge";
@@ -16,14 +14,7 @@ import {
   useTopicsFeed,
 } from "@/hooks/use-article";
 
-export const Route = createFileRoute("/feed")({
-  head: () => ({
-    meta: [{ title: "Your feed — Prosely" }],
-  }),
-  component: Feed,
-});
-
-function Feed() {
+export default function Feed() {
   const {
     data: feed = [],
     isLoading,

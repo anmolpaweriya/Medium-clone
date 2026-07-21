@@ -1,4 +1,4 @@
-import { Link, createFileRoute } from "@tanstack/react-router";
+import { Link } from "react-router-dom";
 
 import { ArticleCard } from "@/components/article-card";
 import { PageShell } from "@/components/site-header";
@@ -9,14 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
 import { useMyArticles } from "@/hooks/use-article";
 
-export const Route = createFileRoute("/profile")({
-  head: () => ({
-    meta: [{ title: "Profile — Prosely" }],
-  }),
-  component: Profile,
-});
-
-function Profile() {
+export default function Profile() {
   const { data: user, isLoading } = useAuth();
 
   const { data: articles = [], isLoading: articlesLoading } =

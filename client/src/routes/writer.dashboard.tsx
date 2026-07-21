@@ -1,4 +1,4 @@
-import { Link, createFileRoute } from "@tanstack/react-router";
+import { Link } from "react-router-dom";
 import { Eye, MessageCircle, ThumbsUp, Users } from "lucide-react";
 
 import { PageShell } from "@/components/site-header";
@@ -8,12 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 import { useMyArticles } from "@/hooks/use-article";
 
-export const Route = createFileRoute("/writer/dashboard")({
-  head: () => ({ meta: [{ title: "Writer dashboard — Prosely" }] }),
-  component: Dashboard,
-});
-
-function Dashboard() {
+export default function WriterDashboard() {
   const { data: user, isLoading: userLoading } = useAuth();
   const { data: allArticles = [], isLoading: articlesLoading } = useMyArticles();
 
@@ -70,7 +65,7 @@ function Dashboard() {
             <CardHeader><CardTitle>Recent stories</CardTitle></CardHeader>
             <CardContent className="space-y-3">
               {arts.slice(0, 4).map((a: any) => (
-                <Link key={a.id} to="/article/$slug" params={{ slug: a.slug }} className="flex items-center gap-4 rounded-md p-2 hover:bg-muted">
+                <Link key={a.id} to={`/article/${a.slug}`} className="flex items-center gap-4 rounded-md p-2 hover:bg-muted">
                   {a.coverImage && <img src={a.coverImage} alt="" className="h-14 w-20 shrink-0 rounded object-cover" />}
                   <div className="min-w-0 flex-1">
                     <div className="line-clamp-1 font-medium">{a.title}</div>
@@ -87,7 +82,7 @@ function Dashboard() {
               {drafts.map((d: any) => (
                 <div key={d.id} className="flex items-center justify-between rounded-md p-2 hover:bg-muted">
                   <div className="min-w-0"><div className="line-clamp-1 font-medium">{d.title}</div><div className="text-xs text-muted-foreground">Last edited {new Date(d.updatedAt || d.createdAt).toLocaleDateString()}</div></div>
-                  <Button asChild variant="ghost" size="sm"><Link to="/writer/editor">Continue</Link></Button>
+                  <Button asChild variant="ghost" size="sm"><Link to={`/writer/editor?id=${d.id}`}>Continue</Link></Button>
                 </div>
               ))}
               {drafts.length === 0 && <p className="text-sm text-muted-foreground">No drafts yet.</p>}

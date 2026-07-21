@@ -1,4 +1,4 @@
-import { Link, createFileRoute } from "@tanstack/react-router";
+import { Link, useNavigate } from "react-router-dom";
 import { Feather } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -6,17 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 import { useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
 import { signup } from "@/lib/auth";
 
-export const Route = createFileRoute("/register")({
-  head: () => ({ meta: [{ title: "Create account — Prosely" }] }),
-  component: Register,
-});
-
-
-
-function Register() {
+export default function Register() {
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
@@ -51,7 +43,7 @@ function Register() {
 
       localStorage.setItem("token", data.token);
 
-      navigate({ to: "/feed" });
+      navigate("/feed");
     } catch (err: any) {
       setError(
         err.response?.data?.message || "Something went wrong"

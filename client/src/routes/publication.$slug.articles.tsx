@@ -1,4 +1,4 @@
-import { createFileRoute, notFound } from "@tanstack/react-router";
+import { useParams } from "react-router-dom";
 
 import { ArticleCard } from "@/components/article-card";
 import { PublicationHeader } from "@/components/publication-header";
@@ -6,16 +6,14 @@ import { PublicationNav } from "@/components/publication-nav";
 import { PageShell } from "@/components/site-header";
 import { articlesByPublication, getPublication } from "@/lib/mock-data";
 
-export const Route = createFileRoute("/publication/$slug/articles")({
-  loader: ({ params }) => { const pub = getPublication(params.slug); if (!pub) throw notFound(); return { pub }; },
-  head: ({ loaderData }) => ({ meta: loaderData ? [{ title: `Articles — ${loaderData.pub.name}` }] : [] }),
-  errorComponent: ({ error }) => <PageShell><div className="container-prose py-20 text-center">{error.message}</div></PageShell>,
-  notFoundComponent: () => <PageShell><div className="container-prose py-20 text-center">Not found</div></PageShell>,
-  component: PubArticles,
-});
+export default function PubArticles() {
+  const { slug } = useParams<{ slug: string }>();
+  const pub = slug ? getPublication(slug) : undefined;
 
-function PubArticles() {
-  const { pub } = Route.useLoaderData();
+  if (!pub) {
+    return <PageShell><div className="container-prose py-20 text-center">Not found</div></PageShell>;
+  }
+
   const arts = articlesByPublication(pub.id);
   return (
     <PageShell>

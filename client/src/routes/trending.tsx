@@ -1,4 +1,3 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { Flame } from "lucide-react";
 
 import { ArticleCard } from "@/components/article-card";
@@ -7,12 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useTrendingFeed } from "@/hooks/use-article";
 import { trendingTags } from "@/lib/mock-data";
 
-export const Route = createFileRoute("/trending")({
-  head: () => ({ meta: [{ title: "Trending — Prosely" }, { name: "description", content: "The most-read articles on Prosely this week." }] }),
-  component: Trending,
-});
-
-function Trending() {
+export default function Trending() {
   const { data: trendingArticles = [], isLoading } = useTrendingFeed();
 
   if (isLoading) {

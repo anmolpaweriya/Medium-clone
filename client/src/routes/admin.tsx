@@ -1,4 +1,4 @@
-import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "react-router-dom";
 import { AlertTriangle, CheckCircle2, Eye, Flag, Shield, Trash2, TrendingUp, Users } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { useEffect } from "react";
@@ -23,12 +23,7 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 import { viewsSeries } from "@/lib/mock-data";
 
-export const Route = createFileRoute("/admin")({
-  head: () => ({ meta: [{ title: "Admin console — Prosely" }, { name: "robots", content: "noindex" }] }),
-  component: Admin,
-});
-
-function Admin() {
+export default function Admin() {
   const navigate = useNavigate();
   const { data: user, isLoading: isAuthLoading } = useAuth();
 
@@ -43,7 +38,7 @@ function Admin() {
   useEffect(() => {
     if (!isAuthLoading && (!user || user.role !== "admin")) {
       toast.error("Access denied. Admin privileges required.");
-      navigate({ to: "/" });
+      navigate("/");
     }
   }, [user, isAuthLoading, navigate]);
 
@@ -215,7 +210,7 @@ function Admin() {
                   <div key={a.id} className="flex flex-wrap items-center gap-4 rounded-lg border border-border/60 p-4">
                     <img src={a.coverImage || "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400"} alt="" className="h-14 w-20 rounded object-cover" />
                     <div className="min-w-0 flex-1">
-                      <Link to="/article/$slug" params={{ slug: a.slug }} className="line-clamp-1 font-medium hover:underline">
+                      <Link to={`/article/${a.slug}`} className="line-clamp-1 font-medium hover:underline">
                         {a.title}
                       </Link>
                       <div className="text-xs text-muted-foreground">

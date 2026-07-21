@@ -1,4 +1,3 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { AtSign, Bell, MessageCircle, ThumbsUp, UserPlus } from "lucide-react";
 import { useEffect } from "react";
 
@@ -8,12 +7,7 @@ import { useNotifications, useMarkNotificationsRead } from "@/hooks/use-auth";
 
 const iconFor: Record<string, any> = { clap: ThumbsUp, follow: UserPlus, comment: MessageCircle, publish: Bell, mention: AtSign };
 
-export const Route = createFileRoute("/notifications")({
-  head: () => ({ meta: [{ title: "Notifications — Prosely" }] }),
-  component: Notifs,
-});
-
-function Notifs() {
+export default function Notifications() {
   const { data: notifications = [], isLoading } = useNotifications();
   const { mutate: markRead } = useMarkNotificationsRead();
 

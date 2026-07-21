@@ -1,17 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
-
 import { PageShell } from "@/components/site-header";
 import { WriterNav } from "@/components/writer-nav";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { currentUser, users } from "@/lib/mock-data";
 
-export const Route = createFileRoute("/writer/followers")({
-  head: () => ({ meta: [{ title: "Followers — Prosely" }] }),
-  component: Followers,
-});
-
-function Followers() {
+export default function Followers() {
   const followers = users.filter((u) => u.id !== currentUser.id && u.role !== "admin");
   return (
     <PageShell>

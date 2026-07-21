@@ -1,4 +1,4 @@
-import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Bell, Bookmark, Feather, Search, Settings, User } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -17,7 +17,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 export function SiteHeader() {
   const navigate = useNavigate();
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { pathname } = useLocation();
   const { data: user, isLoading} = useAuth();
   const queryClient = useQueryClient();
   const handleLogout = () => {
@@ -46,7 +46,7 @@ export function SiteHeader() {
             const form = e.currentTarget;
             const input = form.querySelector("input") as HTMLInputElement;
             if (input && input.value.trim()) {
-              navigate({ to: "/search", search: { q: input.value.trim() } });
+              navigate(`/search?q=${encodeURIComponent(input.value.trim())}`);
             }
           }}
           className="relative ml-4 hidden flex-1 max-w-md md:block"

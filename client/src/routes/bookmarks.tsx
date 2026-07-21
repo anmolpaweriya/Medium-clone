@@ -1,16 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { Bookmark } from "lucide-react";
 
 import { ArticleCard } from "@/components/article-card";
 import { PageShell } from "@/components/site-header";
 import { useBookmarks } from "@/hooks/use-auth";
 
-export const Route = createFileRoute("/bookmarks")({
-  head: () => ({ meta: [{ title: "Bookmarks — Prosely" }] }),
-  component: Bookmarks,
-});
-
-function Bookmarks() {
+export default function Bookmarks() {
   const { data: saved = [], isLoading } = useBookmarks();
 
   if (isLoading) {

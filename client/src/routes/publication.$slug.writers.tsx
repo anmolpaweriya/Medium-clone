@@ -1,4 +1,4 @@
-import { createFileRoute, notFound } from "@tanstack/react-router";
+import { useParams } from "react-router-dom";
 
 import { PublicationHeader } from "@/components/publication-header";
 import { PublicationNav } from "@/components/publication-nav";
@@ -7,15 +7,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { articlesByPublication, getPublication, getUser } from "@/lib/mock-data";
 
-export const Route = createFileRoute("/publication/$slug/writers")({
-  loader: ({ params }) => { const pub = getPublication(params.slug); if (!pub) throw notFound(); return { pub }; },
-  errorComponent: ({ error }) => <PageShell><div className="container-prose py-20 text-center">{error.message}</div></PageShell>,
-  notFoundComponent: () => <PageShell><div className="container-prose py-20 text-center">Not found</div></PageShell>,
-  component: PubWriters,
-});
+export default function PubWriters() {
+  const { slug } = useParams<{ slug: string }>();
+  const pub = slug ? getPublication(slug) : undefined;
 
-function PubWriters() {
-  const { pub } = Route.useLoaderData();
+  if (!pub) {
+    return <PageShell><div className="container-prose py-20 text-center">Not found</div></PageShell>;
+  }
   const writers = pub.writerIds.map(getUser);
   return (
     <PageShell>

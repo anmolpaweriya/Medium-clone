@@ -1,4 +1,4 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useLocation } from "react-router-dom";
 
 const items = [
   { key: "home", label: "Home", path: "" },
@@ -9,7 +9,7 @@ const items = [
 ];
 
 export function PublicationNav({ slug }: { slug: string }) {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { pathname } = useLocation();
   const base = `/publication/${slug}`;
   return (
     <nav className="flex flex-wrap gap-6 border-b border-border/60 text-sm">

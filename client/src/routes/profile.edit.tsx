@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { ArrowLeft, Camera } from "lucide-react";
@@ -11,12 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth, useUpdateProfile } from "@/hooks/use-auth";
 
-export const Route = createFileRoute("/profile/edit")({
-  head: () => ({ meta: [{ title: "Edit profile — Prosely" }] }),
-  component: EditProfile,
-});
-
-function EditProfile() {
+export default function EditProfile() {
   const navigate = useNavigate();
   const { data: user, isLoading } = useAuth();
   const { mutate: updateProfile, isPending } = useUpdateProfile();
@@ -49,7 +44,7 @@ function EditProfile() {
       avatar,
       email,
     }, {
-      onSuccess: () => navigate({ to: "/profile" }),
+      onSuccess: () => navigate("/profile"),
     });
   }
 

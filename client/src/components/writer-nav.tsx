@@ -1,4 +1,4 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useLocation } from "react-router-dom";
 import { BarChart3, FileText, LayoutDashboard, PenSquare, ScrollText, Users } from "lucide-react";
 
 const items = [
@@ -11,7 +11,7 @@ const items = [
 ];
 
 export function WriterNav() {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { pathname } = useLocation();
   return (
     <nav className="flex flex-wrap gap-1 border-b border-border/60 pb-2">
       {items.map((it) => {

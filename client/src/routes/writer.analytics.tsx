@@ -1,4 +1,3 @@
-import { createFileRoute } from '@tanstack/react-router';
 import { PageShell } from "@/components/site-header";
 import { WriterNav } from "@/components/writer-nav";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,12 +6,7 @@ import { useMyArticles } from "@/hooks/use-article";
 import { viewsSeries } from "@/lib/mock-data";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
-export const Route = createFileRoute("/writer/analytics")({
-  head: () => ({ meta: [{ title: "Analytics — Prosely" }] }),
-  component: Analytics,
-});
-
-function Analytics() {
+export default function WriterAnalytics() {
   const { data: allArticles = [], isLoading } = useMyArticles();
 
   const arts = allArticles.filter((a: any) => a.status === "published");

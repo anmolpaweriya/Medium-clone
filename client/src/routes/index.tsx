@@ -1,4 +1,4 @@
-import { Link, createFileRoute } from "@tanstack/react-router";
+import { Link } from "react-router-dom";
 import { ArrowRight, TrendingUp } from "lucide-react";
 
 import { ArticleCard } from "@/components/article-card";
@@ -9,11 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth, useToggleFollow } from "@/hooks/use-auth";
 import { useHome } from "@/hooks/use-home";
 
-export const Route = createFileRoute("/")({
-  component: Home,
-});
-
-function Home() {
+export default function Home() {
   const { data: user } = useAuth();
   const { mutate: toggleFollow, isPending: isFollowing } = useToggleFollow();
   const { data, isLoading } = useHome();
@@ -87,7 +83,7 @@ function Home() {
             </div>
           </div>
 
-          <Link to="/article/$slug" params={{ slug: hero.slug }} className="group block">
+          <Link to={`/article/${hero.slug}`} className="group block">
             <div className="overflow-hidden rounded-xl border border-border/60 bg-card">
               <img src={hero.coverImage} alt="" className="aspect-[16/10] w-full object-cover transition duration-500 group-hover:scale-[1.02]" />
               <div className="p-6">
@@ -116,7 +112,7 @@ function Home() {
           <div className="grid gap-6 md:grid-cols-3">
             {featured.map((a) => {
               return (
-                <Link key={a.id} to="/article/$slug" params={{ slug: a.slug }} className="group block">
+                <Link key={a.id} to={`/article/${a.slug}`} className="group block">
                   <img src={a.coverImage} alt="" className="aspect-[4/3] w-full rounded-md object-cover" />
                   <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
                     <Avatar className="h-5 w-5"><AvatarImage src={a.author.avatar} /><AvatarFallback>{a.author.name[0]}</AvatarFallback></Avatar>

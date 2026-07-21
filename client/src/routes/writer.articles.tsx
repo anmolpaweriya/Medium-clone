@@ -1,4 +1,4 @@
-import { Link, createFileRoute } from "@tanstack/react-router";
+import { Link } from "react-router-dom";
 import { Eye, MessageCircle, Pencil, ThumbsUp, Trash2 } from "lucide-react";
 
 import { PageShell } from "@/components/site-header";
@@ -8,12 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useMyArticles, useDeleteArticle } from "@/hooks/use-article";
 
-export const Route = createFileRoute("/writer/articles")({
-  head: () => ({ meta: [{ title: "My articles — Prosely" }] }),
-  component: MyArticles,
-});
-
-function MyArticles() {
+export default function MyArticles() {
   const { data: allArticles = [], isLoading } = useMyArticles();
   const { mutate: deleteArticle, isPending: isDeleting } = useDeleteArticle();
   const arts = allArticles.filter((a: any) => a.status === "published");
@@ -51,7 +46,7 @@ function MyArticles() {
               {arts.map((a: any) => (
                 <TableRow key={a.id}>
                   <TableCell className="max-w-md">
-                    <Link to="/article/$slug" params={{ slug: a.slug }} className="font-medium hover:underline">{a.title}</Link>
+                    <Link to={`/article/${a.slug}`} className="font-medium hover:underline">{a.title}</Link>
                     <div className="line-clamp-1 text-xs text-muted-foreground">{a.excerpt}</div>
                   </TableCell>
                   <TableCell><Badge className="rounded-full" variant="secondary">Published</Badge></TableCell>
@@ -62,7 +57,7 @@ function MyArticles() {
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
                       <Button asChild variant="ghost" size="icon" title="Edit story">
-                        <Link to="/writer/editor" search={{ id: a.id }}><Pencil className="h-4 w-4" /></Link>
+                        <Link to={`/writer/editor?id=${a.id}`}><Pencil className="h-4 w-4" /></Link>
                       </Button>
                       <Button
                         variant="ghost"

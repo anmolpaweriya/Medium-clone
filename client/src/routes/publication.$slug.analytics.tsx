@@ -1,4 +1,4 @@
-import { createFileRoute, notFound } from "@tanstack/react-router";
+import { useParams } from "react-router-dom";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 import { PublicationHeader } from "@/components/publication-header";
@@ -8,15 +8,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { articlesByPublication, getPublication, viewsSeries } from "@/lib/mock-data";
 
-export const Route = createFileRoute("/publication/$slug/analytics")({
-  loader: ({ params }) => { const pub = getPublication(params.slug); if (!pub) throw notFound(); return { pub }; },
-  errorComponent: ({ error }) => <PageShell><div className="container-prose py-20 text-center">{error.message}</div></PageShell>,
-  notFoundComponent: () => <PageShell><div className="container-prose py-20 text-center">Not found</div></PageShell>,
-  component: PubAnalytics,
-});
+export default function PubAnalytics() {
+  const { slug } = useParams<{ slug: string }>();
+  const pub = slug ? getPublication(slug) : undefined;
 
-function PubAnalytics() {
-  const { pub } = Route.useLoaderData();
+  if (!pub) {
+    return <PageShell><div className="container-prose py-20 text-center">Not found</div></PageShell>;
+  }
   const arts = articlesByPublication(pub.id);
   const total = arts.reduce((s, a) => s + a.views, 0);
   return (

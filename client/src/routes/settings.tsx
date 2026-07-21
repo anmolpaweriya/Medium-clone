@@ -1,4 +1,4 @@
-import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Bell, Lock, User, Palette, Shield, Trash2, Mail, Globe } from "lucide-react";
@@ -25,12 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useAuth, useUpdateProfile } from "@/hooks/use-auth";
 
-export const Route = createFileRoute("/settings")({
-  head: () => ({ meta: [{ title: "Settings — Prosely" }] }),
-  component: Settings,
-});
-
-function Settings() {
+export default function Settings() {
   const navigate = useNavigate();
   const { data: user, isLoading } = useAuth();
   const { mutate: updateProfile, isPending } = useUpdateProfile();
